@@ -13,4 +13,5 @@ from __future__ import annotations
 
 RELEASE_PUBLIC_KEYS: list[str] = [
     # "AbC...base64url de 43 caracteres...",
+    "z0mP-rkyjwjrf1OblXCSNBhuKU-3yjd96Q_U56Gk-os",
 ]

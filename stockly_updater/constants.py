@@ -4,7 +4,7 @@ from __future__ import annotations
 import os
 
 OWNER = "InnoDev69"
-REPO = "StockManager"
+REPO = "StockManager-staging"
 EXE_NAME = "stockly"        # ejecutable de la app (sin .exe)
 HELPER_NAME = "update"      # ejecutable del ayudante (sin .exe)
 
