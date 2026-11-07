@@ -1,0 +1,1245 @@
+{% extends "base.html" %}
+
+{% block content %}
+<body>
+    <div class="container sh-root">
+
+        <header class="sh-page-header">
+            <div class="sh-page-header__left">
+                <div class="sh-page-header__eyebrow">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+                    Reporte de ventas
+                </div>
+                <h1 class="sh-page-header__title">Historial de Ventas</h1>
+            </div>
+            <div class="sh-page-header__right">
+                <button class="btn btn-ghost sh-export-btn" onclick="exportToCSV()">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                        <polyline points="7 10 12 15 17 10"/>
+                        <line x1="12" y1="15" x2="12" y2="3"/>
+                    </svg>
+                    Exportar CSV
+                </button>
+            </div>
+        </header>
+
+        {% if sales %}
+            <div class="sh-stats-grid">
+                <div class="sh-stat">
+                    <div class="sh-stat__icon sh-stat__icon--blue">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
+                        </svg>
+                    </div>
+                    <div class="sh-stat__body">
+                        <span class="sh-stat__label">Total Ventas</span>
+                        <span class="sh-stat__value" id="totalSales">$0.00</span>
+                    </div>
+                    <div class="sh-stat__glow sh-stat__glow--blue"></div>
+                </div>
+
+                <div class="sh-stat">
+                    <div class="sh-stat__icon sh-stat__icon--green">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/>
+                        </svg>
+                    </div>
+                    <div class="sh-stat__body">
+                        <span class="sh-stat__label">Transacciones</span>
+                        <span class="sh-stat__value" id="totalTransactions">0</span>
+                    </div>
+                    <div class="sh-stat__glow sh-stat__glow--green"></div>
+                </div>
+
+                <div class="sh-stat">
+                    <div class="sh-stat__icon sh-stat__icon--red">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
+                            <polyline points="3.27 6.96 12 12.01 20.73 6.96"/>
+                            <line x1="12" y1="22.08" x2="12" y2="12"/>
+                        </svg>
+                    </div>
+                    <div class="sh-stat__body">
+                        <span class="sh-stat__label">Productos Vendidos</span>
+                        <span class="sh-stat__value" id="totalProducts">0</span>
+                    </div>
+                    <div class="sh-stat__glow sh-stat__glow--red"></div>
+                </div>
+            </div>
+        {% endif %}
+
+        <div class="card sh-filters-card">
+            <div class="sh-filters-card__header">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
+                <span>Filtros de búsqueda</span>
+            </div>
+            <form id="filterForm" class="sh-filter-grid">
+                <div class="sh-field">
+                    <label class="sh-label" for="dateFrom">Fecha desde</label>
+                    <input type="date" id="dateFrom" name="date_from" class="input sh-input">
+                </div>
+                <div class="sh-field">
+                    <label class="sh-label" for="dateTo">Fecha hasta</label>
+                    <input type="date" id="dateTo" name="date_to" class="input sh-input">
+                </div>
+                <div class="sh-field">
+                    <label class="sh-label" for="productFilter">Producto</label>
+                    <input type="text" id="productFilter" max="{{Limits.PRODUCT_NAME_MAX}}" name="product" class="input sh-input" placeholder="Buscar por producto...">
+                </div>
+                <div class="sh-field">
+                    <label class="sh-label" for="vendedorFilter">Vendedor</label>
+                    <input type="text" id="vendedorFilter" name="vendedor" class="input sh-input" placeholder="Buscar por vendedor...">
+                </div>
+                <div class="sh-filter-actions">
+                    <button type="submit" class="btn">Filtrar</button>
+                    <button type="button" class="btn btn-ghost" onclick="clearFilters()">Limpiar</button>
+                </div>
+            </form>
+        </div>
+
+        <div class="card sh-table-card">
+
+            <div class="sh-table-card__header">
+                <div class="sh-table-card__title-row">
+                    <h3 class="sh-table-card__title">Detalle de Ventas</h3>
+                    <div id="sales-page-info" class="sh-page-info" style="display:none;">
+                        Mostrando <strong><span id="sales-from">0</span>–<span id="sales-to">0</span></strong>
+                        de <strong><span id="sales-total">0</span></strong> ventas
+                    </div>
+                </div>
+                <div class="sh-table-card__controls">
+                    <div class="sh-page-size-wrap" style="display:none;" id="sales-pagesize-wrap">
+                        <label class="sh-label-inline">Por página:</label>
+                        <select id="sales-page-size" class="sh-select-sm">
+                            <option value="10" selected>10</option>
+                            <option value="20">20</option>
+                            <option value="50">50</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <div class="sh-table-wrap">
+                <table class="sh-table">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Fecha</th>
+                            <th>Productos</th>
+                            <th class="sh-th--num">Cant.</th>
+                            <th class="sh-th--num">Total</th>
+                            <th>Vendedor</th>
+                            <th>Pago</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody id="salesTableBody">
+                        {% if sales %}
+                            {% for sale in sales %}
+                            <tr class="sale-row" data-index="{{ loop.index0 }}">
+                                <td><span class="sh-id">#{{ sale.id }}</span></td>
+                                <td class="sh-td--date">{{ sale.date }}</td>
+                                <td>
+                                    <div class="sh-badge-list">
+                                        {% for product in sale.products %}
+                                        <span class="sh-badge">{{ product.name }}</span>
+                                        {% endfor %}
+                                    </div>
+                                </td>
+                                <td class="sh-td--num">{{ sale.total_quantity }}</td>
+                                <td class="sh-td--num sh-td--total">${{ "%.2f"|format(sale.total) }}</td>
+                                <td class="sh-td--vendedor">{{ sale.vendedor or '—' }}</td>
+                                <td>
+                                    <span class="sh-badge sh-badge--payment">
+                                        {{ sale.payment_method or 'Efectivo' }}
+                                    </span>
+                                </td>
+                                <td class="sh-td--action">
+                                    <div style="display: flex; gap: 6px; align-items: center;">
+                                        <button class="sh-btn-icon" onclick="viewSaleDetail({{ sale.id }})" title="Ver detalle">
+                                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                                                <circle cx="12" cy="12" r="3"/>
+                                            </svg>
+                                        </button>
+                                        {% if has_permission(PERMS.SALES_EDIT) %}
+                                        <a href="/sales/{{ sale.id }}/edit" class="sh-btn-icon" title="Editar venta">
+                                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                                                <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                                            </svg>
+                                        </a>
+                                        {% endif %}
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        {% else %}
+                        <tr id="empty-sales-row">
+                            <td colspan="8">
+                                <div class="sh-empty">
+                                    <div class="sh-empty__icon">
+                                        <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2">
+                                            <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+                                        </svg>
+                                    </div>
+                                    <p class="sh-empty__title">Sin resultados</p>
+                                    <p class="sh-empty__sub">Intenta ajustar los filtros de búsqueda</p>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endif %}
+                    </tbody>
+                </table>
+            </div>
+
+            <div id="sales-pagination" class="sh-pagination" style="display:none;">
+                <div id="sales-page-buttons" class="sh-pg-buttons"></div>
+            </div>
+        </div>
+    </div>
+
+    <div id="saleModal" class="sh-modal">
+        <div class="sh-modal__backdrop" onclick="closeSaleModal()"></div>
+        <div class="sh-modal__panel">
+
+            <div class="sh-modal__header">
+                <div>
+                    <p class="sh-modal__eyebrow">Detalle de venta</p>
+                    <h3 class="sh-modal__title"><span id="modalSaleId"></span></h3>
+                </div>
+                <button class="sh-modal__close" onclick="closeSaleModal()" aria-label="Cerrar">&times;</button>
+            </div>
+
+            <div class="sh-modal__body">
+                <div class="sh-modal__meta">
+                    <div class="sh-meta-item">
+                        <span class="sh-meta-label">Fecha</span>
+                        <span class="sh-meta-value" id="detailDate"></span>
+                    </div>
+                    <div class="sh-meta-item">
+                        <span class="sh-meta-label">ID Transacción</span>
+                        <span class="sh-meta-value" id="detailId"></span>
+                    </div>
+                    <div class="sh-meta-item">
+                        <span class="sh-meta-label">Vendedor</span>
+                        <span class="sh-meta-value" id="detailVendedor"></span>
+                    </div>
+                    <div class="sh-meta-item">
+                        <span class="sh-meta-label">Método de pago</span>
+                        <span class="sh-meta-value" id="detailPayment"></span>
+                    </div>
+                </div>
+
+                <div class="sh-modal__section-header">
+                    <h4 class="sh-modal__section-title">Productos</h4>
+                    <div class="sh-modal__section-controls">
+                        <span id="detail-page-info" class="sh-label-inline" style="font-size:0.78rem; color:var(--text-muted);"></span>
+                        <label class="sh-label-inline">Por página:</label>
+                        <select id="detail-page-size" class="sh-select-sm">
+                            <option value="5" selected>5</option>
+                            <option value="10">10</option>
+                            <option value="20">20</option>
+                        </select>
+                    </div>
+                </div>
+
+                <table class="sh-table sh-table--modal">
+                    <thead>
+                        <tr>
+                            <th>Producto</th>
+                            <th class="sh-th--num">Cant.</th>
+                            <th class="sh-th--num">Precio Unit.</th>
+                            <th class="sh-th--num">Subtotal</th>
+                        </tr>
+                    </thead>
+                    <tbody id="detailTableBody"></tbody>
+                </table>
+
+                <div id="detail-pagination" class="sh-pagination sh-pagination--sm" style="display:none;">
+                    <span id="detail-page-counter" class="sh-label-inline" style="font-size:0.78rem;"></span>
+                    <div id="detail-page-buttons" class="sh-pg-buttons"></div>
+                </div>
+
+                <div class="sh-modal__total">
+                    <span class="sh-modal__total-label">Total</span>
+                    <span class="sh-modal__total-value" id="detailTotal"></span>
+                </div>
+            </div>
+
+            <div class="sh-modal__footer">
+                <button class="btn btn-ghost" onclick="closeSaleModal()">Cerrar</button>
+                <button class="btn" onclick="printSale()">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/>
+                        <rect x="6" y="14" width="12" height="8"/>
+                    </svg>
+                    Imprimir
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+    (function () {
+        'use strict';
+
+        function $(id) { return document.getElementById(id); }
+
+        /* ── Pagination renderer ─────────────────────────────── */
+        function renderPagination(container, current, total, onPage) {
+            if (total <= 1) { container.innerHTML = ''; return; }
+
+            let pages = [];
+            if (total <= 7) {
+                for (let i = 1; i <= total; i++) pages.push(i);
+            } else {
+                pages.push(1);
+                if (current > 3) pages.push('...');
+                for (let i = Math.max(2, current - 1); i <= Math.min(total - 1, current + 1); i++) pages.push(i);
+                if (current < total - 2) pages.push('...');
+                pages.push(total);
+            }
+
+            let html = '<button class="pg-btn" ' + (current === 1 ? 'disabled' : 'data-pg="' + (current - 1) + '"') + ' title="Anterior">' +
+                '<svg style="width:11px;height:11px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 19l-7-7 7-7"/></svg>' +
+                '</button>';
+
+            pages.forEach(p => {
+                if (p === '...') {
+                    html += '<span class="pg-ellipsis">…</span>';
+                } else {
+                    html += '<button class="pg-btn' + (p === current ? ' active' : '') + '" data-pg="' + p + '">' + p + '</button>';
+                }
+            });
+
+            html += '<button class="pg-btn" ' + (current === total ? 'disabled' : 'data-pg="' + (current + 1) + '"') + ' title="Siguiente">' +
+                '<svg style="width:11px;height:11px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"/></svg>' +
+                '</button>';
+
+            container.innerHTML = html;
+            container.onclick = function (e) {
+                const btn = e.target.closest('.pg-btn[data-pg]');
+                if (!btn || btn.disabled) return;
+                const pg = parseInt(btn.dataset.pg);
+                if (pg >= 1 && pg <= total) onPage(pg);
+            };
+        }
+
+        /* ── Sales list pagination ───────────────────────────── */
+        (function initSalesPagination() {
+            const rows  = Array.from(document.querySelectorAll('.sale-row'));
+            const total = rows.length;
+            if (total === 0) return;
+
+            let page     = 1;
+            let pageSize = 10;
+
+            const paginationEl = $('sales-pagination');
+            const pageInfoEl   = $('sales-page-info');
+            const psWrapEl     = $('sales-pagesize-wrap');
+            const fromEl       = $('sales-from');
+            const toEl         = $('sales-to');
+            const totalEl      = $('sales-total');
+            const buttonsEl    = $('sales-page-buttons');
+            const pageSizeSel  = $('sales-page-size');
+
+            function render() {
+                const totalPages = Math.ceil(total / pageSize) || 1;
+                if (page > totalPages) page = totalPages;
+
+                const start = (page - 1) * pageSize;
+                const end   = Math.min(start + pageSize, total);
+
+                rows.forEach((row, i) => {
+                    row.style.display = (i >= start && i < end) ? '' : 'none';
+                });
+
+                fromEl.textContent  = start + 1;
+                toEl.textContent    = end;
+                totalEl.textContent = total;
+                pageInfoEl.style.display = '';
+                psWrapEl.style.display   = '';
+
+                const showPag = totalPages > 1;
+                paginationEl.style.display = showPag ? '' : 'none';
+                if (showPag) renderPagination(buttonsEl, page, totalPages, function (pg) { page = pg; render(); });
+            }
+
+            pageSizeSel.addEventListener('change', function () { pageSize = parseInt(this.value); page = 1; render(); });
+            render();
+        })();
+
+        /* ── Detail modal ────────────────────────────────────── */
+        let detailProducts = [];
+        let detailPage     = 1;
+        let detailPageSize = 5;
+
+        function renderDetailTable() {
+            const tbody     = $('detailTableBody');
+            const infoEl    = $('detail-page-info');
+            const counterEl = $('detail-page-counter');
+            const paginEl   = $('detail-pagination');
+            const buttonsEl = $('detail-page-buttons');
+
+            const total      = detailProducts.length;
+            const totalPages = Math.ceil(total / detailPageSize) || 1;
+            if (detailPage > totalPages) detailPage = totalPages;
+            if (detailPage < 1)          detailPage = 1;
+
+            const start   = (detailPage - 1) * detailPageSize;
+            const end     = Math.min(start + detailPageSize, total);
+            const slice   = detailProducts.slice(start, end);
+
+            infoEl.textContent    = total > detailPageSize ? (start + 1) + '–' + end + ' de ' + total : total + ' productos';
+            counterEl.textContent = 'Pág. ' + detailPage + ' / ' + totalPages;
+
+            tbody.innerHTML = '';
+            slice.forEach(function (p) {
+                const subtotal = (Number(p.quantity) * Number(p.price)).toFixed(2);
+                const tr       = document.createElement('tr');
+                tr.innerHTML   =
+                    '<td>' + escapeHtml(p.name) + '</td>' +
+                    '<td class="sh-td--num">' + Number(p.quantity) + '</td>' +
+                    '<td class="sh-td--num">$' + Number(p.price).toFixed(2) + '</td>' +
+                    '<td class="sh-td--num sh-td--total">$' + subtotal + '</td>';
+                tbody.appendChild(tr);
+            });
+
+            paginEl.style.display = totalPages > 1 ? '' : 'none';
+            if (totalPages > 1) renderPagination(buttonsEl, detailPage, totalPages, function (pg) { detailPage = pg; renderDetailTable(); });
+        }
+
+        function escapeHtml(text) {
+            const d = document.createElement('div');
+            d.textContent = String(text || '');
+            return d.innerHTML;
+        }
+
+        /* ── Clock ───────────────────────────────────────────── */
+        function updateClock() {
+            const now  = new Date();
+            const el   = $('current-time');
+            if (el) el.textContent = now.toLocaleDateString('es-ES', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }) + ' — ' +
+                now.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+        }
+        updateClock();
+        setInterval(updateClock, 1000);
+
+        /* ── Default dates ───────────────────────────────────── */
+        const today        = new Date();
+        const thirtyAgo    = new Date(today);
+        thirtyAgo.setDate(today.getDate() - 30);
+        $('dateTo').valueAsDate   = today;
+        $('dateFrom').valueAsDate = thirtyAgo;
+
+        /* ── Filter form ─────────────────────────────────────── */
+        function applyClientFilters() {
+            const dateFrom = $('dateFrom').value;
+            const dateTo = $('dateTo').value;
+            const productFilter = $('productFilter').value.toLowerCase();
+            const vendedorFilter = $('vendedorFilter').value.toLowerCase();
+
+            const rows = document.querySelectorAll('#salesTableBody .sale-row');
+            let visibleCount = 0;
+            let totalSales = 0, totalProducts = 0;
+
+            rows.forEach(row => {
+                const saleDate = row.cells[1].textContent.trim();
+                const products = row.cells[2].textContent.toLowerCase();
+                const vendedor = row.cells[5].textContent.toLowerCase();
+                const total = parseFloat((row.cells[4].textContent || '').replace(/[$,]/g, '')) || 0;
+                const quantity = parseInt(row.cells[3].textContent) || 0;
+
+                let show = true;
+
+                if (dateFrom && saleDate < dateFrom) show = false;
+                if (dateTo && saleDate > dateTo) show = false;
+                if (productFilter && !products.includes(productFilter)) show = false;
+                if (vendedorFilter && !vendedor.includes(vendedorFilter)) show = false;
+
+                row.style.display = show ? '' : 'none';
+                
+                if (show) {
+                    visibleCount++;
+                    totalSales += total;
+                    totalProducts += quantity;
+                }
+            });
+
+            // Update stats
+            $('totalSales').textContent = '$' + totalSales.toFixed(2);
+            $('totalTransactions').textContent = visibleCount;
+            $('totalProducts').textContent = totalProducts;
+
+            // Show/hide empty state
+            const emptyRow = $('empty-sales-row');
+            if (visibleCount === 0 && emptyRow) {
+                emptyRow.style.display = '';
+            } else if (emptyRow) {
+                emptyRow.style.display = 'none';
+            }
+
+            // Re-init pagination with visible rows
+            initSalesPaginationAfterFilter();
+        }
+
+        function initSalesPaginationAfterFilter() {
+            const rows = Array.from(document.querySelectorAll('.sale-row'));
+            const visibleRows = rows.filter(r => r.style.display !== 'none');
+            const total = visibleRows.length;
+
+            const paginationEl = $('sales-pagination');
+            const pageInfoEl = $('sales-page-info');
+            const psWrapEl = $('sales-pagesize-wrap');
+            const fromEl = $('sales-from');
+            const toEl = $('sales-to');
+            const totalEl = $('sales-total');
+            const buttonsEl = $('sales-page-buttons');
+            const pageSizeSel = $('sales-page-size');
+
+            let page = 1;
+            let pageSize = 10;
+
+            function renderFilterPagination() {
+                const totalPages = Math.ceil(total / pageSize) || 1;
+                if (page > totalPages) page = totalPages;
+
+                const start = (page - 1) * pageSize;
+                const end = Math.min(start + pageSize, total);
+
+                rows.forEach(row => {
+                    const idx = visibleRows.indexOf(row);
+                    row.style.display = (idx >= start && idx < end) ? '' : 'none';
+                });
+
+                fromEl.textContent = start + 1;
+                toEl.textContent = end;
+                totalEl.textContent = total;
+                pageInfoEl.style.display = total > 0 ? '' : 'none';
+                psWrapEl.style.display = total > 0 ? '' : 'none';
+
+                const showPag = totalPages > 1;
+                paginationEl.style.display = showPag ? '' : 'none';
+                if (showPag) renderPagination(buttonsEl, page, totalPages, function (pg) { page = pg; renderFilterPagination(); });
+            }
+
+            pageSizeSel.onchange = null;
+            pageSizeSel.addEventListener('change', function () { pageSize = parseInt(this.value); page = 1; renderFilterPagination(); });
+            renderFilterPagination();
+        }
+
+        $('filterForm').addEventListener('submit', function (e) {
+            e.preventDefault();
+            applyClientFilters();
+        });
+
+        window.clearFilters = function () {
+            $('filterForm').reset();
+            const t = new Date(), tda = new Date(t);
+            tda.setDate(t.getDate() - 30);
+            $('dateTo').valueAsDate = t;
+            $('dateFrom').valueAsDate = tda;
+            
+            // Show all rows and recalculate stats
+            document.querySelectorAll('#salesTableBody .sale-row').forEach(row => {
+                row.style.display = '';
+            });
+            
+            // Reinitialize pagination
+            const rows = Array.from(document.querySelectorAll('.sale-row'));
+            const total = rows.length;
+            let totalSales = 0, totalProducts = 0;
+            rows.forEach(row => {
+                totalSales += parseFloat((row.cells[4].textContent || '').replace(/[$,]/g, '')) || 0;
+                totalProducts += parseInt(row.cells[3].textContent) || 0;
+            });
+            $('totalSales').textContent = '$' + totalSales.toFixed(2);
+            $('totalTransactions').textContent = total;
+            $('totalProducts').textContent = totalProducts;
+            
+            // Reset pagination
+            location.reload();
+        };
+
+        /* ── View detail ─────────────────────────────────────── */
+        window.viewSaleDetail = async function (saleId) {
+            try {
+                const res = await fetch('/api/sales/' + saleId, { headers: { 'Accept': 'application/json' } });
+                const ct  = res.headers.get('content-type') || '';
+
+                if (!res.ok) throw new Error('HTTP ' + res.status + ': ' + (await res.text()).slice(0, 200));
+                if (!ct.includes('application/json')) throw new Error('Respuesta no JSON');
+
+                const data = await res.json();
+
+                $('modalSaleId').textContent   = '#' + data.id;
+                $('detailDate').textContent     = data.date;
+                $('detailId').textContent       = data.id;
+                $('detailTotal').textContent    = '$' + Number(data.total).toFixed(2);
+                $('detailVendedor').textContent  = data.vendedor || '—';
+                $('detailPayment').textContent   = data.payment_method || 'Efectivo';
+
+                detailProducts = data.products || [];
+                detailPage     = 1;
+                detailPageSize = parseInt($('detail-page-size').value) || 5;
+
+                renderDetailTable();
+                $('saleModal').classList.add('sh-modal--open');
+            } catch (err) {
+                console.error(err);
+                alert('Error al cargar el detalle de la venta');
+            }
+        };
+
+        $('detail-page-size').addEventListener('change', function () {
+            detailPageSize = parseInt(this.value); detailPage = 1; renderDetailTable();
+        });
+
+        window.closeSaleModal = function () { $('saleModal').classList.remove('sh-modal--open'); };
+        
+        /* ── Print Sale ──────────────────────────────────────── */
+        window.printSale = function () {
+            const originalPageSize = detailPageSize;
+            const originalPage = detailPage;
+
+            detailPageSize = detailProducts.length > 0 ? detailProducts.length : 1;
+            detailPage = 1;
+            renderDetailTable();
+
+            setTimeout(() => {
+                window.print();
+
+                detailPageSize = originalPageSize;
+                detailPage = originalPage;
+                renderDetailTable();
+            }, 150);
+        };
+
+        /* ── CSV export ──────────────────────────────────────── */
+        window.exportToCSV = async function () {
+            try {
+                const table = document.querySelector('.sh-table:not(.sh-table--modal)');
+                if (!table) {
+                    Notify.error('No se encontró tabla para exportar');
+                    return;
+                }
+
+                const filename = 'ventas_' + new Date().toISOString().split('T')[0] + '.csv';
+                
+                await window.CSVExporter.exportFromHTMLTable(table, filename, 1);
+                Notify.success('CSV exportado correctamente');
+            } catch (err) {
+                console.error('Error al exportar CSV:', err);
+                if (err.name !== 'AbortError') {
+                    Notify.error('Error al exportar: ' + err.message);
+                }
+            }
+        };
+
+        /* ── Stats ───────────────────────────────────────────── */
+        (function calculateStats() {
+            const rows = document.querySelectorAll('#salesTableBody .sale-row');
+            if (!rows.length) return;
+            let totalSales = 0, totalProducts = 0;
+            rows.forEach(row => {
+                totalSales    += parseFloat((row.cells[4].textContent || '').replace(/[$,]/g, '')) || 0;
+                totalProducts += parseInt(row.cells[3].textContent) || 0;
+            });
+            $('totalSales').textContent       = '$' + totalSales.toFixed(2);
+            $('totalTransactions').textContent = rows.length;
+            $('totalProducts').textContent     = totalProducts;
+        })();
+
+    })();
+    </script>
+
+    <style>
+    /* ══════════════════════════════════════════════
+       SH (Sales History) - scoped component styles
+       Colors: uses existing CSS variables ONLY
+       ══════════════════════════════════════════════ */
+
+    /* Root */
+    .sh-root { padding-top: 2rem; padding-bottom: 3rem; }
+
+    /* ── Page Header ──────────────────────────────── */
+    .sh-page-header {
+        display: flex;
+        align-items: flex-end;
+        justify-content: space-between;
+        gap: 1rem;
+        margin-bottom: 2rem;
+        flex-wrap: wrap;
+    }
+    .sh-page-header__eyebrow {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.4rem;
+        font-size: 0.78rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        color: var(--brand, #00d4ff);
+        margin-bottom: 0.35rem;
+        opacity: 0.85;
+    }
+    .sh-page-header__title {
+        margin: 0;
+        font-size: 1.75rem;
+        font-weight: 800;
+        color: var(--text);
+        letter-spacing: -0.02em;
+        line-height: 1.1;
+    }
+    .sh-export-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.45rem;
+        flex-shrink: 0;
+    }
+
+    /* ── Stats ────────────────────────────────────── */
+    .sh-stats-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 1rem;
+        margin-bottom: 1.25rem;
+    }
+    .sh-stat {
+        position: relative;
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        padding: 1.25rem 1.5rem;
+        background: linear-gradient(135deg, rgba(255,255,255,0.04), rgba(255,255,255,0.02));
+        border: 1px solid var(--border);
+        border-radius: var(--radius-lg, 12px);
+        overflow: hidden;
+        transition: transform 0.2s ease, border-color 0.2s ease;
+    }
+    .sh-stat:hover { transform: translateY(-2px); border-color: rgba(255,255,255,0.15); }
+
+    .sh-stat__icon {
+        flex-shrink: 0;
+        width: 44px; height: 44px;
+        border-radius: 10px;
+        display: flex; align-items: center; justify-content: center;
+        color: #fff;
+        position: relative; z-index: 1;
+    }
+    .sh-stat__icon--blue  { background: linear-gradient(135deg, #00d4ff, #0099cc); }
+    .sh-stat__icon--green { background: linear-gradient(135deg, #00ff88, #00cc66); }
+    .sh-stat__icon--red   { background: linear-gradient(135deg, #ff6b6b, #cc5555); }
+
+    .sh-stat__body {
+        display: flex; flex-direction: column; gap: 0.2rem;
+        position: relative; z-index: 1;
+    }
+    .sh-stat__label {
+        font-size: 0.78rem; font-weight: 600; text-transform: uppercase;
+        letter-spacing: 0.06em; color: var(--text-muted);
+    }
+    .sh-stat__value {
+        font-size: 1.6rem; font-weight: 800;
+        color: var(--text); letter-spacing: -0.02em; line-height: 1;
+    }
+
+    .sh-stat__glow {
+        position: absolute; right: -20px; bottom: -20px;
+        width: 100px; height: 100px; border-radius: 50%;
+        opacity: 0.08; filter: blur(20px);
+        pointer-events: none;
+    }
+    .sh-stat__glow--blue  { background: #00d4ff; }
+    .sh-stat__glow--green { background: #00ff88; }
+    .sh-stat__glow--red   { background: #ff6b6b; }
+
+    /* ── Filters ──────────────────────────────────── */
+    .sh-filters-card {
+        padding: 0 !important;
+        margin-bottom: 1.25rem;
+        overflow: hidden;
+    }
+    .sh-filters-card__header {
+        display: flex; align-items: center; gap: 0.5rem;
+        padding: 0.75rem 1.25rem;
+        font-size: 0.7rem; font-weight: 700;
+        text-transform: uppercase; letter-spacing: 0.09em;
+        color: var(--text-muted);
+        border-bottom: 1px solid var(--border);
+        background: rgba(255,255,255,0.018);
+    }
+    .sh-filters-card__header svg { opacity: 0.6; }
+    .sh-filter-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr 1fr 1fr auto;
+        gap: 0.875rem 1rem;
+        align-items: end;
+        padding: 1.1rem 1.25rem 1.25rem;
+    }
+    .sh-field { display: flex; flex-direction: column; gap: 0.35rem; }
+    .sh-label {
+        font-size: 0.68rem; font-weight: 700;
+        text-transform: uppercase; letter-spacing: 0.08em;
+        color: var(--text-muted); opacity: 0.7;
+    }
+    .sh-input { margin: 0 !important; }
+    .sh-filter-actions {
+        display: flex; gap: 0.45rem; align-items: center;
+        padding-bottom: 1px;
+    }
+    .sh-filter-actions .btn-ghost {
+        padding: 0.5rem 0.75rem;
+        font-size: 0.82rem;
+    }
+
+    /* ── Table card ───────────────────────────────── */
+    .sh-table-card { padding: 0 !important; overflow: hidden; }
+
+    .sh-table-card__header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1rem;
+        padding: 1rem 1.25rem 0.85rem;
+        border-bottom: 1px solid var(--border);
+        flex-wrap: wrap;
+    }
+    .sh-table-card__title-row {
+        display: flex; align-items: center; gap: 1rem; flex-wrap: wrap;
+    }
+    .sh-table-card__title {
+        margin: 0; font-size: 0.95rem; font-weight: 700; color: var(--text);
+    }
+    .sh-page-info {
+        font-size: 0.78rem; color: var(--text-muted);
+    }
+    .sh-table-card__controls { display: flex; align-items: center; gap: 0.75rem; }
+
+    .sh-page-size-wrap {
+        display: flex; align-items: center; gap: 0.4rem;
+    }
+    .sh-label-inline {
+        font-size: 0.78rem; color: var(--text-muted); white-space: nowrap;
+    }
+    .sh-select-sm {
+        padding: 0.3rem 0.5rem;
+        font-size: 0.78rem;
+        border-radius: 6px;
+        border: 1px solid var(--border);
+        background: var(--panel-2);
+        color: var(--text);
+        width: auto;
+        cursor: pointer;
+    }
+
+    /* ── Table ────────────────────────────────────── */
+    .sh-table-wrap { overflow-x: auto; }
+    .sh-table {
+        width: 100%; border-collapse: collapse;
+    }
+    .sh-table th {
+        padding: 0.65rem 1rem;
+        text-align: left;
+        font-size: 0.72rem; font-weight: 700;
+        text-transform: uppercase; letter-spacing: 0.07em;
+        color: var(--text-muted);
+        border-bottom: 1px solid var(--border);
+        white-space: nowrap;
+        background: rgba(255,255,255,0.015);
+    }
+    .sh-table td {
+        padding: 0.85rem 1rem;
+        border-bottom: 1px solid rgba(255,255,255,0.05);
+        font-size: 0.875rem;
+        color: var(--text);
+        vertical-align: middle;
+    }
+    .sh-table tbody tr { transition: background 0.15s ease; }
+    .sh-table tbody tr:hover { background: rgba(255,255,255,0.03); }
+    .sh-table tbody tr:last-child td { border-bottom: 0; }
+
+    .sh-th--num, .sh-td--num { text-align: right; }
+
+    .sh-id {
+        font-size: 0.8rem; font-weight: 700;
+        color: var(--text-muted);
+        font-variant-numeric: tabular-nums;
+    }
+    .sh-td--date { font-size: 0.82rem; white-space: nowrap; color: var(--text-muted); }
+    .sh-td--total { font-weight: 700; color: var(--brand, #00d4ff); }
+    .sh-td--vendedor { font-size: 0.82rem; }
+    .sh-td--action { width: 48px; text-align: center; }
+
+    /* ── Badges ───────────────────────────────────── */
+    .sh-badge-list { display: flex; flex-wrap: wrap; gap: 0.25rem; }
+    .sh-badge {
+        display: inline-block;
+        padding: 0.2rem 0.55rem;
+        border-radius: 5px;
+        font-size: 0.72rem; font-weight: 600;
+        background: rgba(0, 212, 255, 0.12);
+        border: 1px solid rgba(0, 212, 255, 0.22);
+        color: rgba(0, 212, 255, 0.9);
+        white-space: nowrap;
+    }
+    .sh-badge--payment {
+        background: color-mix(in srgb, var(--brand, #00d4ff) 10%, transparent);
+        border-color: color-mix(in srgb, var(--brand, #00d4ff) 22%, transparent);
+        color: color-mix(in srgb, var(--brand, #00d4ff) 90%, white);
+    }
+
+    /* ── Action button ────────────────────────────── */
+    .sh-btn-icon {
+        display: inline-flex; align-items: center; justify-content: center;
+        width: 32px; height: 32px;
+        background: transparent;
+        border: 1px solid var(--border);
+        border-radius: 7px;
+        cursor: pointer;
+        color: var(--text-muted);
+        transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+    }
+    .sh-btn-icon:hover {
+        background: rgba(0, 212, 255, 0.12);
+        border-color: rgba(0, 212, 255, 0.35);
+        color: #00d4ff;
+    }
+
+    /* ── Empty state ──────────────────────────────── */
+    .sh-empty {
+        display: flex; flex-direction: column; align-items: center;
+        padding: 3rem 1rem; gap: 0.5rem; text-align: center;
+    }
+    .sh-empty__icon {
+        width: 64px; height: 64px; border-radius: 50%;
+        display: flex; align-items: center; justify-content: center;
+        background: rgba(255,255,255,0.04);
+        border: 1px solid var(--border);
+        color: var(--text-muted); opacity: 0.5;
+        margin-bottom: 0.5rem;
+    }
+    .sh-empty__title { font-weight: 700; color: var(--text); margin: 0; }
+    .sh-empty__sub   { font-size: 0.85rem; color: var(--text-muted); margin: 0; }
+
+    /* ── Pagination ───────────────────────────────── */
+    .sh-pagination {
+        display: flex; align-items: center; justify-content: flex-end; gap: 0.5rem;
+        padding: 0.85rem 1.25rem;
+        border-top: 1px solid var(--border);
+        flex-wrap: wrap;
+    }
+    .sh-pagination--sm {
+        border-top: 1px solid rgba(255,255,255,0.06);
+        padding: 0.6rem 0 0;
+        margin-top: 0.6rem;
+    }
+    .sh-pg-buttons { display: flex; gap: 0.3rem; }
+
+    .pg-btn {
+        display: inline-flex; align-items: center; justify-content: center;
+        min-width: 30px; height: 30px; padding: 0 0.4rem;
+        border-radius: 6px; border: 1px solid rgba(255,255,255,0.12);
+        background: transparent; cursor: pointer;
+        font-size: 0.78rem; font-weight: 600; color: var(--text-muted);
+        transition: background 0.12s, border-color 0.12s, color 0.12s;
+    }
+    .pg-btn:hover:not(:disabled) {
+        background: rgba(0, 212, 255, 0.1); border-color: rgba(0, 212, 255, 0.3);
+        color: var(--text);
+    }
+    .pg-btn.active {
+        background: rgba(0, 212, 255, 0.2); border-color: rgba(0, 212, 255, 0.5);
+        color: #00d4ff; font-weight: 700;
+    }
+    .pg-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+    .pg-ellipsis {
+        display: inline-flex; align-items: center; padding: 0 0.2rem;
+        color: var(--text-muted); font-size: 0.78rem; user-select: none;
+    }
+
+    /* ── Modal ────────────────────────────────────── */
+    .sh-modal {
+        position: fixed; inset: 0; z-index: 1000;
+        display: flex; align-items: center; justify-content: center;
+        padding: 1rem;
+        pointer-events: none; opacity: 0;
+        transition: opacity 0.2s ease;
+    }
+    .sh-modal--open { pointer-events: auto; opacity: 1; }
+
+    .sh-modal__backdrop {
+        position: absolute; inset: 0;
+        background: rgba(0,0,0,0.65);
+        backdrop-filter: blur(5px);
+    }
+    .sh-modal__panel {
+        position: relative; z-index: 1;
+        background: var(--panel, #161722);
+        border: 1px solid var(--border);
+        border-radius: 16px;
+        width: 100%; max-width: 780px;
+        max-height: 90vh; overflow-y: auto;
+        box-shadow: 0 24px 64px rgba(0,0,0,0.55);
+        transform: translateY(8px) scale(0.98);
+        transition: transform 0.2s ease;
+    }
+    .sh-modal--open .sh-modal__panel { transform: translateY(0) scale(1); }
+
+    .sh-modal__header {
+        display: flex; justify-content: space-between; align-items: flex-start;
+        padding: 1.25rem 1.5rem;
+        border-bottom: 1px solid var(--border);
+        background: rgba(255,255,255,0.02);
+    }
+    .sh-modal__eyebrow {
+        font-size: 0.72rem; font-weight: 700;
+        text-transform: uppercase; letter-spacing: 0.08em;
+        color: var(--brand, #00d4ff); margin: 0 0 0.2rem;
+    }
+    .sh-modal__title { margin: 0; font-size: 1.2rem; font-weight: 800; }
+    .sh-modal__close {
+        background: transparent; border: none; cursor: pointer;
+        font-size: 1.6rem; line-height: 1; color: var(--text-muted);
+        width: 32px; height: 32px; display: flex; align-items: center; justify-content: center;
+        border-radius: 8px; transition: background 0.15s ease, color 0.15s ease;
+    }
+    .sh-modal__close:hover { background: rgba(255,255,255,0.06); color: var(--text); }
+
+    .sh-modal__body { padding: 1.5rem; }
+
+    .sh-modal__meta {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 0.75rem 1.5rem;
+        padding: 1rem 1.25rem;
+        background: rgba(255,255,255,0.03);
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        margin-bottom: 1.5rem;
+    }
+    .sh-meta-item { display: flex; flex-direction: column; gap: 0.2rem; }
+    .sh-meta-label {
+        font-size: 0.72rem; font-weight: 700;
+        text-transform: uppercase; letter-spacing: 0.06em;
+        color: var(--text-muted);
+    }
+    .sh-meta-value { font-size: 0.9rem; font-weight: 600; color: var(--text); }
+
+    .sh-modal__section-header {
+        display: flex; align-items: center; justify-content: space-between;
+        margin-bottom: 0.75rem; flex-wrap: wrap; gap: 0.5rem;
+    }
+    .sh-modal__section-title { margin: 0; font-size: 0.88rem; font-weight: 700; }
+    .sh-modal__section-controls { display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; }
+
+    .sh-table--modal th { background: rgba(255,255,255,0.025); }
+
+    .sh-modal__total {
+        display: flex; align-items: center; justify-content: space-between;
+        margin-top: 1.25rem; padding: 0.9rem 1.25rem;
+        background: rgba(0, 212, 255, 0.08);
+        border: 1px solid rgba(0, 212, 255, 0.18);
+        border-radius: 10px;
+    }
+    .sh-modal__total-label {
+        font-size: 0.82rem; font-weight: 700;
+        text-transform: uppercase; letter-spacing: 0.06em;
+        color: var(--text-muted);
+    }
+    .sh-modal__total-value {
+        font-size: 1.4rem; font-weight: 800;
+        color: var(--brand, #00d4ff); letter-spacing: -0.02em;
+    }
+
+    .sh-modal__footer {
+        display: flex; justify-content: flex-end; align-items: center; gap: 0.75rem;
+        padding: 1rem 1.5rem;
+        border-top: 1px solid var(--border);
+    }
+    .sh-modal__footer .btn {
+        display: inline-flex; align-items: center; gap: 0.4rem;
+    }
+
+    /* ── Responsive ───────────────────────────────── */
+    @media (max-width: 900px) {
+        .sh-stats-grid { grid-template-columns: repeat(3, 1fr); }
+        .sh-filter-grid { grid-template-columns: 1fr 1fr; }
+        .sh-filter-actions { grid-column: span 2; justify-content: flex-start; }
+    }
+    @media (max-width: 640px) {
+        .sh-page-header { flex-direction: column; align-items: flex-start; }
+        .sh-stats-grid  { grid-template-columns: 1fr; }
+        .sh-filter-grid { grid-template-columns: 1fr; }
+        .sh-filter-actions { grid-column: 1; }
+        .sh-modal__meta { grid-template-columns: 1fr; }
+        .sh-table th, .sh-table td { padding: 0.65rem 0.75rem; font-size: 0.8rem; }
+    }
+
+    /* ══════════════════════════════════════════════
+       PRINT — Técnica visibility:hidden
+       Oculta TODO el DOM sin dejar espacio residual,
+       luego restaura solo el modal abierto.
+       Esto evita que el sidebar/navbar del base.html
+       aparezca en la impresión.
+       ══════════════════════════════════════════════ */
+    /* ══════════════════════════════════════════════
+       PRINT — MODO TICKET TÉRMICO (80mm)
+       ══════════════════════════════════════════════ */
+    @media print {
+        @page {
+            size: 80mm auto; /* Ancho estándar de ticket, largo dinámico */
+            margin: 0;       /* Elimina los márgenes y textos por defecto del navegador */
+        }
+
+        body * {
+            visibility: hidden !important;
+        }
+
+        body {
+            background-color: #fff !important;
+            margin: 0 !important;
+            padding: 0 !important;
+        }
+
+        .sh-modal--open,
+        .sh-modal--open * {
+            visibility: visible !important;
+        }
+
+        .sh-modal--open {
+            position: absolute !important;
+            top: 0 !important;
+            left: 0 !important;
+            width: 100% !important;
+            max-width: 80mm !important; /* Forzar el ancho del ticket */
+            padding: 4mm !important;    /* Un pequeño margen interno para que no corte letras */
+            display: block !important;
+            background: #fff !important;
+            color: #000 !important;
+            font-family: 'Courier New', Courier, monospace !important; /* Fuente clásica de ticket */
+        }
+
+        .sh-modal__panel {
+            position: relative !important;
+            width: 100% !important;
+            box-shadow: none !important;
+            border: none !important;
+            border-radius: 0 !important;
+            transform: none !important;
+            background: transparent !important;
+            padding: 0 !important;
+        }
+
+        .sh-modal__backdrop {
+            display: none !important;
+        }
+
+        .sh-modal__header {
+            padding: 0 0 5mm 0 !important;
+            border-bottom: 1px dashed #000 !important; /* Línea punteada típica */
+            background: transparent !important;
+            text-align: center !important;
+            display: block !important;
+        }
+        
+        .sh-modal__eyebrow {
+            color: #000 !important;
+            font-size: 14px !important;
+            font-weight: bold !important;
+            margin-bottom: 5px !important;
+            display: block !important;
+        }
+        
+        .sh-modal__title {
+            color: #000 !important;
+            font-size: 12px !important;
+            font-weight: normal !important;
+        }
+
+        .sh-modal__body {
+            padding: 5mm 0 0 0 !important;
+        }
+
+        .sh-modal__meta {
+            background: transparent !important;
+            border: none !important;
+            border-bottom: 1px dashed #000 !important;
+            border-radius: 0 !important;
+            padding: 0 0 5mm 0 !important;
+            margin-bottom: 5mm !important;
+            display: block !important; /* Quitamos el grid para alinearlos en lista */
+        }
+        
+        .sh-meta-item { 
+            display: flex !important; 
+            justify-content: space-between !important;
+            flex-direction: row !important;
+            margin-bottom: 3px !important;
+        }
+        
+        .sh-meta-label { 
+            color: #000 !important; 
+            font-size: 10px !important; 
+            font-weight: normal !important;
+        }
+        
+        .sh-meta-value { 
+            color: #000 !important; 
+            font-size: 10px !important; 
+        }
+
+        .sh-table--modal { margin-bottom: 5mm !important; }
+        
+        .sh-table--modal th {
+            background: transparent !important;
+            border-bottom: 1px dashed #000 !important;
+            color: #000 !important;
+            padding: 2px 0 !important;
+            font-size: 10px !important;
+        }
+        
+        .sh-table--modal td {
+            border-bottom: none !important; /* Sin líneas entre productos para ahorrar espacio */
+            color: #000 !important;
+            padding: 4px 0 !important;
+            font-size: 10px !important;
+        }
+
+        .sh-table--modal th:nth-child(2), .sh-table--modal td:nth-child(2),
+        .sh-table--modal th:nth-child(3), .sh-table--modal td:nth-child(3),
+        .sh-table--modal th:nth-child(4), .sh-table--modal td:nth-child(4) {
+            text-align: right !important;
+        }
+
+        .sh-table--modal tr {
+            page-break-inside: avoid;
+            break-inside: avoid;
+        }
+
+        .sh-modal__total {
+            background: transparent !important;
+            border: none !important;
+            border-top: 1px dashed #000 !important;
+            border-radius: 0 !important;
+            padding: 5mm 0 0 0 !important;
+            margin-top: 0 !important;
+            display: flex !important;
+        }
+        .sh-modal__total-label { color: #000 !important; font-size: 14px !important; }
+        .sh-modal__total-value { color: #000 !important; font-size: 14px !important; }
+
+        .sh-modal__close,
+        .sh-modal__footer,
+        .sh-modal__section-header, /* Oculta el título "Productos" y el selector de paginación */
+        #detail-pagination {
+            display: none !important;
+        }
+    }
+    </style>
+</body>
+</html>
+
+{% endblock %}

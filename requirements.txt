@@ -1,0 +1,18 @@
+Flask==3.0.0
+Flask-Session==0.8.0
+Werkzeug==3.0.1
+python-dotenv==1.0.0
+waitress==2.1.2
+requests
+pytz
+python-barcode
+Pillow
+reportlab
+pywebview==6.1
+cffi==2.0.0
+certifi
+
+# Actualizaciones firmadas y licencias
+PyNaCl>=1.5
+# Licencias (se activan al embeber la clave pública en core/licensing/public_keys.py):
+# stockly-license @ git+https://github.com/InnoDev69/stockly-license.git@v0.2.0

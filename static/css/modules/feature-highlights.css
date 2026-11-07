@@ -1,0 +1,142 @@
+/* feature-highlights.css — tag "NUEVO" pulsante + tooltip.
+   Todo lo agrega feature-highlights.js (clase fh-anchor, fh-badge,
+   fh-tooltip, y el atributo data-seen) — no hace falta tocar nada acá
+   por template, solo cargar este archivo una vez. */
+
+.fh-anchor {
+  position: relative;
+  display: inline-block;
+}
+
+.fh-badge {
+  position: absolute;
+  /* Adentro del borde, no sobresaliendo: si sobresaliera (offset
+     negativo) y el contenedor padre tuviera overflow:hidden (común en
+     cards con bordes redondeados), quedaría cortado sin que nada acá
+     lo pueda arreglar. Si tu card SÍ tiene overflow visible y querés
+     el look "medio afuera", cambiá top/right a valores negativos. */
+  top: 6px;
+  right: 6px;
+  background: #ef4444;
+  color: #fff;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  line-height: 1;
+  padding: 3px 6px;
+  border-radius: 999px;
+  box-shadow: 0 0 0 2px #fff;
+  pointer-events: none;
+  white-space: nowrap;
+  z-index: 20;
+  animation: fh-pulse 1.6s infinite;
+}
+
+.fh-tooltip {
+  position: absolute;
+  bottom: calc(100% + 10px);
+  left: 50%;
+  transform: translateX(-50%) translateY(4px);
+  background: #111827;
+  color: #fff;
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1.45;
+  padding: 9px 13px;
+  border-radius: 10px;
+  text-align: center;
+  /* Crece con el contenido hasta max-width, y recién ahí hace salto
+     de línea — así se ve bien tanto con 20 como con 100 caracteres. */
+  white-space: normal;
+  width: max-content;
+  min-width: 90px;
+  max-width: 260px;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.15s ease, transform 0.15s ease;
+  z-index: 30;
+}
+
+.fh-tooltip::after {
+  content: "";
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  border: 6px solid transparent;
+  border-top-color: #111827;
+}
+
+.fh-anchor[data-seen="false"]:hover .fh-tooltip {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+
+.fh-anchor[data-seen="true"] .fh-badge,
+.fh-anchor[data-seen="true"] .fh-tooltip {
+  display: none;
+}
+
+@keyframes fh-pulse {
+  0% {
+    box-shadow: 0 0 0 2px #fff, 0 0 0 2px rgba(239, 68, 68, 0.6);
+  }
+  70% {
+    box-shadow: 0 0 0 2px #fff, 0 0 0 8px rgba(239, 68, 68, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 2px #fff, 0 0 0 0 rgba(239, 68, 68, 0);
+  }
+}
+
+/* --- Aura neón ------------------------------------------------------ */
+/* Modo default: rainbow. Alternativas via JS: "random" (color fijo al
+   azar por elemento) o cualquier color CSS válido (sólido).
+   Se dibuja con ::before para no agregar más nodos al DOM. */
+
+.fh-anchor::before {
+  content: "";
+  position: absolute;
+  inset: -5px;
+  border-radius: var(--fh-glow-radius, 10px);
+  pointer-events: none;
+  z-index: 1;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.fh-anchor[data-seen="false"]::before {
+  opacity: 1;
+  /* #ff2d78 es solo el fallback si nadie seteó --fh-glow-color (no
+     debería pasar nunca vía JS, pero por si se usa el atributo a
+     mano sin pasar por buildBadge/applyGlow). El color real lo pone
+     el JS con el.style.setProperty("--fh-glow-color", ...). */
+  box-shadow:
+    0 0 6px 1px var(--fh-glow-color, #ff2d78),
+    0 0 14px 3px var(--fh-glow-color, #ff2d78),
+    0 0 26px 7px var(--fh-glow-color, #ff2d78);
+  animation: fh-glow-pulse 1.8s ease-in-out infinite;
+}
+
+/* rainbow: rota el matiz sobre el color base, sin depender de animar
+   custom properties de color (soporte parejo entre motores) */
+.fh-anchor[data-glow="rainbow"][data-seen="false"]::before {
+  animation:
+    fh-glow-pulse 1.8s ease-in-out infinite,
+    fh-hue-rotate 3s linear infinite;
+}
+
+@keyframes fh-glow-pulse {
+  0%, 100% { filter: brightness(1) saturate(1); }
+  50%      { filter: brightness(1.4) saturate(1.2); }
+}
+
+@keyframes fh-hue-rotate {
+  from { filter: brightness(1.15) hue-rotate(0deg); }
+  to   { filter: brightness(1.15) hue-rotate(360deg); }
+}
+
+.fh-anchor[data-seen="true"]::before {
+  display: none;
+}
