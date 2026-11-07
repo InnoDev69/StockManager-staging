@@ -142,6 +142,23 @@ jobs:
             }
           }
           finally {
+            $logDir = Join-Path $env:APPDATA "StockManager\logs"
+            Write-Host "Proceso: Id=$($proc.Id), HasExited=$($proc.HasExited)"
+            Write-Host "Conexiones en el puerto $($env:APP_PORT):"
+            Get-NetTCPConnection -LocalPort ([int]$env:APP_PORT) -ErrorAction SilentlyContinue |
+              Format-Table -AutoSize | Out-String | Write-Host
+            if (Test-Path $logDir) {
+              Get-ChildItem $logDir -Filter 'app_*.log' -File |
+                Sort-Object LastWriteTime -Descending |
+                Select-Object -First 1 |
+                ForEach-Object {
+                  Write-Host "Log de Stockly: $($_.FullName)"
+                  Get-Content $_.FullName
+                }
+            } else {
+              Write-Host "No existe el directorio de logs: $logDir"
+            }
+
             # /T mata también los procesos hijos (WebView2, etc.)
             if (-not $proc.HasExited) {
               taskkill /PID $proc.Id /T /F | Out-Null
