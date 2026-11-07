@@ -112,7 +112,7 @@ jobs:
           $exe = Join-Path $PWD "dist\stockly\stockly.exe"
           if (-not (Test-Path $exe)) { throw "No existe $exe" }
 
-          $proc = Start-Process -FilePath $exe `
+          $proc = Start-Process -FilePath $exe -ArgumentList "--server" `
             -WorkingDirectory (Split-Path $exe) -PassThru
           $ok = $false
 
